@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "702383330510",
+    "project_id": "mobileappdev-62068",
+    "storage_bucket": "mobileappdev-62068.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:702383330510:android:74766a00eff3319194ec9f",
+        "android_client_info": {
+          "package_name": "com.elaboratuvar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLQtyyliZQM3iG2Egmh6JZLpDesHElXmg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
