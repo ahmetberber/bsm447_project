@@ -5,31 +5,44 @@ import AuthScreen from './src/screens/AuthScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import TestScreen from './src/screens/TestScreen';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { Text } from 'react-native/Libraries/Text/Text';
-
+import AdminDashboardScreen from './src/screens/AdminDashboardScreen';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 
 const Stack = createStackNavigator();
 
 const App = () => {
   const [initializing, setInitializing] = useState(true);
-  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+  const [userRole, setUserRole] = useState(null);
 
-  // Kullanıcı oturum durumunu dinle
   useEffect(() => {
-    const subscriber = auth().onAuthStateChanged(currentUser => {
-      setUser(currentUser);
-      if (initializing) setInitializing(false);
+    const subscriber = auth().onAuthStateChanged(async currentUser => {
+      if (currentUser) {
+        const userDoc = await firestore().collection('users').doc(currentUser.uid).get();
+        const userData = userDoc.data();
+        setUserRole(userData ? userData.role : null);
+      } else {
+        setUserRole(null);
+      }
+      if (initializing) {
+        setInitializing(false);
+      }
     });
-    return subscriber; // Unsubscribe dinleyiciyi kaldırır
-  }, []);
-
-  if (initializing) return <Text>Loading...</Text>;
+    return subscriber;
+  }, [initializing]);
 
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        {user ? (
+        {userRole === 'admin' ? (
+          <>
+            <Stack.Screen
+              name="AdminDashboard"
+              component={AdminDashboardScreen}
+              options={{ headerShown: false }}
+            />
+          </>
+        ) : userRole === 'user' ? (
           <>
             <Stack.Screen
               name="Home"
@@ -53,7 +66,8 @@ const App = () => {
             component={AuthScreen}
             options={{ headerShown: false }}
           />
-        )}
+        )
+      }
       </Stack.Navigator>
     </NavigationContainer>
   );
