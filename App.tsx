@@ -5,25 +5,21 @@ import AuthScreen from './src/screens/AuthScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import TestScreen from './src/screens/TestScreen';
-import AdminDashboardScreen from './src/screens/AdminDashboardScreen';
 import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import UsersScreen from './src/screens/Users';
 
 const Stack = createStackNavigator();
 
 const App = () => {
   const [initializing, setInitializing] = useState(true);
-  const [userRole, setUserRole] = useState(null);
+  const [userExist, setUserExist] = useState(false);
 
   useEffect(() => {
     const subscriber = auth().onAuthStateChanged(async currentUser => {
       if (currentUser) {
-        const userDoc = await firestore().collection('users').doc(currentUser.uid).get();
-        const userData = userDoc.data();
-        setUserRole(userData ? userData.role : null);
-      } else {
-        setUserRole(null);
+        setUserExist(true);
       }
+
       if (initializing) {
         setInitializing(false);
       }
@@ -34,20 +30,17 @@ const App = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        {userRole === 'admin' ? (
-          <>
-            <Stack.Screen
-              name="AdminDashboard"
-              component={AdminDashboardScreen}
-              options={{ headerShown: false }}
-            />
-          </>
-        ) : userRole === 'user' ? (
+        {userExist ? (
           <>
             <Stack.Screen
               name="Home"
               component={HomeScreen}
-              options={{ headerShown: false }}
+              options={{ title: 'Home Page' }}
+            />
+            <Stack.Screen
+              name="Users"
+              component={UsersScreen}
+              options={{ title: 'Users' }}
             />
             <Stack.Screen
               name="Profile"
@@ -61,11 +54,13 @@ const App = () => {
             />
           </>
         ) : (
-          <Stack.Screen
-            name="Auth"
-            component={AuthScreen}
-            options={{ headerShown: false }}
-          />
+          <>
+            <Stack.Screen
+              name="Auth"
+              component={AuthScreen}
+              options={{ headerShown: false }}
+            />
+          </>
         )
       }
       </Stack.Navigator>

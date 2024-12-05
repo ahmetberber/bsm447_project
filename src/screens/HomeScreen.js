@@ -1,9 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Button, Card, Title } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 
 const HomeScreen = ({ navigation }) => {
+  const [userRole, setUserRole] = useState(null);
+  const [initializing, setInitializing] = useState(true);
+
+  useEffect(() => {
+    const subscriber = auth().onAuthStateChanged(async currentUser => {
+      if (currentUser) {
+        const userDoc = await firestore().collection('users').doc(currentUser.uid).get();
+        const userData = userDoc.data();
+        setUserRole(userData ? userData.role : null);
+      } else {
+        setUserRole(null);
+      }
+      if (initializing) {
+        setInitializing(false);
+      }
+    });
+    return subscriber;
+  }, [initializing]);
+
   const logout = async () => {
     await auth().signOut();
     navigation.replace('Auth');
@@ -13,26 +33,20 @@ const HomeScreen = ({ navigation }) => {
     <View style={styles.container}>
       <Card style={styles.card}>
         <Card.Content>
-          <Title style={styles.title}>Home</Title>
-          <Button
-            mode="contained"
-            style={styles.button}
-            onPress={() => navigation.navigate('Profile')}
-          >
-            Go to Profile
+          {userRole === 'admin' ? (
+            <>
+              <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('Users')}>
+                Users
+              </Button>
+            </>
+          ) : null }
+          <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('Profile')}>
+            Profile
           </Button>
-          <Button
-            mode="contained"
-            style={styles.button}
-            onPress={() => navigation.navigate('Tests')}
-          >
-            Start Tests
+          <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('Tests')}>
+            Tests
           </Button>
-          <Button
-            mode="outlined"
-            style={styles.logoutButton}
-            onPress={logout}
-          >
+          <Button mode="outlined" style={styles.logoutButton} onPress={logout}>
             Logout
           </Button>
         </Card.Content>

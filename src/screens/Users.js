@@ -3,7 +3,7 @@ import { View, StyleSheet, FlatList } from 'react-native';
 import { Card, Button, Text, Title } from 'react-native-paper';
 import firestore from '@react-native-firebase/firestore';
 
-const AdminDashboardScreen = () => {
+const UsersScreen = () => {
   const [users, setUsers] = useState([]);
   const [message, setMessage] = useState('');
 
@@ -28,6 +28,18 @@ const AdminDashboardScreen = () => {
     }
   };
 
+  const demoteToUser = async (user) => {
+    try {
+      await firestore().collection('users').doc(user.id).update({ role: 'user' });
+      setMessage(`${user.email} has been demoted to user.`);
+      setUsers(prevUsers =>
+        prevUsers.map(u => (u.id === user.id ? { ...u, role: 'user' } : u))
+      );
+    } catch (error) {
+      setMessage('An error occurred while demoting the user.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -40,14 +52,23 @@ const AdminDashboardScreen = () => {
               <Text style={styles.text}>Role: {item.role}</Text>
             </Card.Content>
             <Card.Actions>
-              <Button
-                mode="contained"
-                onPress={() => promoteToAdmin(item)}
-                disabled={item.role === 'admin'}
-                style={styles.button}
-              >
-                Promote to Admin
-              </Button>
+              {item.role === 'admin' ? (
+                <Button
+                  mode="contained"
+                  onPress={() => demoteToUser(item)}
+                  style={styles.button}
+                >
+                  Demote to User
+                </Button>
+              ) : (
+                <Button
+                  mode="contained"
+                  onPress={() => promoteToAdmin(item)}
+                  style={styles.button}
+                >
+                  Promote to Admin
+                </Button>
+              )}
             </Card.Actions>
           </Card>
         )}
@@ -90,4 +111,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AdminDashboardScreen;
+export default UsersScreen;
