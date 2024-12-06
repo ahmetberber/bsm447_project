@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
 import { TextInput, Button, Card, Title, Text, Divider } from 'react-native-paper';
+import { Picker } from '@react-native-picker/picker';
 import firestore, { collection, query, where } from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 
@@ -49,8 +50,8 @@ const referenceRanges = {
   },
 };
 
-const categorizeTestValue = (testType, value, ageGroup) => {
-  const range = referenceRanges[testType]?.[ageGroup];
+const categorizeTestValue = (testType, value) => {
+  const range = referenceRanges[testType];
   if (!range) {return 'Unknown';}
   if (value < range[0]) {return 'Düşük';}
   if (value > range[1]) {return 'Yüksek';}
@@ -60,15 +61,25 @@ const categorizeTestValue = (testType, value, ageGroup) => {
 const TestScreen = () => {
   const [testType, setTestType] = useState('');
   const [value, setValue] = useState('');
-  const [ageGroup, setAgeGroup] = useState('18+ yıl');
   const [tests, setTests] = useState([]);
+  const [userRole, setUserRole] = useState(null);
+  const [filterType, setFilterType] = useState('');
 
-  const fetchTests = async () => {
+  useEffect(() => {
     const uid = auth().currentUser.uid;
-    const snapshot = await query(
-      collection(firestore(), 'tests'),
-      where('uid', '==', uid)
-    ).get();
+    const subscriber = firestore().collection('users').doc(uid).onSnapshot((doc) => {
+      setUserRole(doc.data().role);
+    });
+    return subscriber;
+  }, []);
+
+  const fetchTests = async (filter = '') => {
+    const uid = auth().currentUser.uid;
+    let q = query(collection(firestore(), 'tests'), where('uid', '==', uid));
+    if (filter) {
+      q = query(q, where('testType', '==', filter));
+    }
+    const snapshot = await q.get();
     setTests(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
   };
 
@@ -82,7 +93,6 @@ const TestScreen = () => {
       uid,
       testType,
       value: parseFloat(value),
-      ageGroup,
       createdAt: firestore.FieldValue.serverTimestamp(),
     });
     setTestType('');
@@ -109,31 +119,50 @@ const TestScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Card style={styles.card}>
-        <Card.Content>
-          <Title style={styles.title}>Add a Test</Title>
-          <TextInput
-            label="Test Type"
-            mode="outlined"
-            value={testType}
-            onChangeText={setTestType}
-            style={styles.input}
-            placeholder="Enter test type"
-          />
-          <TextInput
-            label="Value"
-            mode="outlined"
-            value={value}
-            onChangeText={setValue}
-            style={styles.input}
-            placeholder="Enter value"
-            keyboardType="numeric"
-          />
-          <Button mode="contained" onPress={addTest} style={styles.button}>
-            Add Test
-          </Button>
-        </Card.Content>
-      </Card>
+        {userRole === 'admin' ? (
+          <>
+            <Card style={styles.card}>
+              <Card.Content>
+                <Title style={styles.title}>Add a Test</Title>
+                <Picker selectedValue={testType} onValueChange={(itemValue) => setTestType(itemValue)} style={styles.input}>
+                  <Picker.Item label="IgA" value="IgA" />
+                  <Picker.Item label="IgM" value="IgM" />
+                  <Picker.Item label="IgG" value="IgG" />
+                </Picker>
+                <TextInput
+                  label="Value"
+                  mode="outlined"
+                  value={value}
+                  onChangeText={setValue}
+                  style={styles.input}
+                  placeholder="Enter value"
+                  keyboardType="numeric"
+                />
+                <Button mode="contained" onPress={addTest} style={styles.button}>
+                  Add Test
+                </Button>
+              </Card.Content>
+            </Card>
+          </>
+        ) : (
+          <>
+            <Card style={styles.card}>
+              <Card.Content>
+                <Title style={styles.title}>Filter Tests</Title>
+                <Text>Select Test Type</Text>
+                <Picker selectedValue={filterType} onValueChange={(itemValue) => setFilterType(itemValue)} style={styles.input}>
+                  <Picker.Item label="All" value="" />
+                  <Picker.Item label="IgA" value="IgA" />
+                  <Picker.Item label="IgM" value="IgM" />
+                  <Picker.Item label="IgG" value="IgG" />
+                </Picker>
+                <Button mode="contained" onPress={() => fetchTests(filterType)} style={styles.button}>
+                  Apply Filter
+                </Button>
+              </Card.Content>
+            </Card>
+          </>
+        ) }
       <FlatList
         data={tests}
         keyExtractor={(item) => item.id}
@@ -141,7 +170,6 @@ const TestScreen = () => {
           const category = categorizeTestValue(
             item.testType,
             item.value,
-            item.ageGroup
           );
           const backgroundColor = getBackgroundColor(category);
 

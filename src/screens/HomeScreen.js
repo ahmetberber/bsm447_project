@@ -14,8 +14,6 @@ const HomeScreen = ({ navigation }) => {
         const userDoc = await firestore().collection('users').doc(currentUser.uid).get();
         const userData = userDoc.data();
         setUserRole(userData ? userData.role : null);
-      } else {
-        setUserRole(null);
       }
       if (initializing) {
         setInitializing(false);
