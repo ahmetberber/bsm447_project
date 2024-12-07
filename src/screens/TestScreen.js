@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import { View, StyleSheet, FlatList, Alert } from 'react-native';
 import { TextInput, Button, Card, Title, Text, Divider } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
-import firestore, { collection, query, where } from '@react-native-firebase/firestore';
+import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
+// import MaterialIcons from '@react-native-vector-icons/material-icons';
 
 const referenceRanges = {
   IgA: {
@@ -48,138 +49,130 @@ const referenceRanges = {
     '16-18 yıl': [688, 2430],
     '18+ yıl': [639, 1544],
   },
+  IgG1: {
+    '2-3 yıl': [486, 1970],
+    '4-6 yıl': [457, 1120],
+    '7-10 yıl': [483, 1580],
+    '11-16 yıl': [642, 2290],
+    '17-18 yıl': [636, 1610],
+    '18+ yıl': [688, 2430],
+  },
+  IgG2: {
+    '2-3 yıl': [242, 977],
+    '4-6 yıl': [389, 1260],
+    '7-10 yıl': [486, 1970],
+    '11-16 yıl': [457, 1120],
+    '17-18 yıl': [483, 1580],
+    '18+ yıl': [642, 2290],
+  },
 };
 
-const categorizeTestValue = (testType, value) => {
-  const range = referenceRanges[testType];
-  if (!range) {return 'Unknown';}
-  if (value < range[0]) {return 'Düşük';}
-  if (value > range[1]) {return 'Yüksek';}
-  return 'Normal';
+const categorizeTestValue = (testType, value, ageGroup) => {
+  const range = referenceRanges[testType]?.[ageGroup];
+  if (!range) {
+    return { category: 'Unknown', color: '#D3D3D3', icon: 'help-outline' };
+  }
+  if (value < range[0]) {
+    return { category: 'Düşük', color: '#FFB6C1', icon: 'arrow-downward' };
+  }
+  if (value > range[1]) {
+    return { category: 'Yüksek', color: '#ADD8E6', icon: 'arrow-upward' };
+  }
+  return { category: 'Normal', color: '#90EE90', icon: 'check-circle' };
 };
+
 
 const TestScreen = () => {
   const [testType, setTestType] = useState('');
   const [value, setValue] = useState('');
+  const [ageGroup, setAgeGroup] = useState('');
   const [tests, setTests] = useState([]);
-  const [userRole, setUserRole] = useState(null);
-  const [filterType, setFilterType] = useState('');
 
   useEffect(() => {
-    const uid = auth().currentUser.uid;
-    const subscriber = firestore().collection('users').doc(uid).onSnapshot((doc) => {
-      setUserRole(doc.data().role);
-    });
-    return subscriber;
+    fetchTests();
   }, []);
 
-  const fetchTests = async (filter = '') => {
+  const fetchTests = async () => {
     const uid = auth().currentUser.uid;
-    let q = query(collection(firestore(), 'tests'), where('uid', '==', uid));
-    if (filter) {
-      q = query(q, where('testType', '==', filter));
-    }
-    const snapshot = await q.get();
+    const snapshot = await firestore()
+      .collection('tests')
+      .where('uid', '==', uid)
+      .orderBy('createdAt', 'desc')
+      .get();
+
     setTests(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
   };
 
   const addTest = async () => {
-    if (!testType || !value) {
+    if (!testType || !value || !ageGroup) {
+      Alert.alert('Validation Error', 'Please fill all fields.');
       return;
     }
-
     const uid = auth().currentUser.uid;
     await firestore().collection('tests').add({
       uid,
       testType,
       value: parseFloat(value),
+      ageGroup,
       createdAt: firestore.FieldValue.serverTimestamp(),
     });
     setTestType('');
     setValue('');
+    setAgeGroup('');
     fetchTests();
   };
-
-  const getBackgroundColor = (category) => {
-    switch (category) {
-      case 'Düşük':
-        return '#ADD8E6';
-      case 'Yüksek':
-        return '#FFB6C1';
-      case 'Normal':
-        return '#90EE90';
-      default:
-        return '#D3D3D3';
-    }
-  };
-
-  useEffect(() => {
-    fetchTests();
-  }, []);
 
   return (
     <View style={styles.container}>
-        {userRole === 'admin' ? (
-          <>
-            <Card style={styles.card}>
-              <Card.Content>
-                <Title style={styles.title}>Add a Test</Title>
-                <Picker selectedValue={testType} onValueChange={(itemValue) => setTestType(itemValue)} style={styles.input}>
-                  <Picker.Item label="IgA" value="IgA" />
-                  <Picker.Item label="IgM" value="IgM" />
-                  <Picker.Item label="IgG" value="IgG" />
-                </Picker>
-                <TextInput
-                  label="Value"
-                  mode="outlined"
-                  value={value}
-                  onChangeText={setValue}
-                  style={styles.input}
-                  placeholder="Enter value"
-                  keyboardType="numeric"
-                />
-                <Button mode="contained" onPress={addTest} style={styles.button}>
-                  Add Test
-                </Button>
-              </Card.Content>
-            </Card>
-          </>
-        ) : (
-          <>
-            <Card style={styles.card}>
-              <Card.Content>
-                <Title style={styles.title}>Filter Tests</Title>
-                <Text>Select Test Type</Text>
-                <Picker selectedValue={filterType} onValueChange={(itemValue) => setFilterType(itemValue)} style={styles.input}>
-                  <Picker.Item label="All" value="" />
-                  <Picker.Item label="IgA" value="IgA" />
-                  <Picker.Item label="IgM" value="IgM" />
-                  <Picker.Item label="IgG" value="IgG" />
-                </Picker>
-                <Button mode="contained" onPress={() => fetchTests(filterType)} style={styles.button}>
-                  Apply Filter
-                </Button>
-              </Card.Content>
-            </Card>
-          </>
-        ) }
+      <Card style={styles.card}>
+        <Card.Content>
+          <Title style={styles.title}>Add a Test</Title>
+          <Picker selectedValue={testType} onValueChange={(itemValue) => setTestType(itemValue)} style={styles.input}>
+            <Picker.Item label="Select Test Type" value="" />
+            <Picker.Item label="IgA" value="IgA" />
+            <Picker.Item label="IgM" value="IgM" />
+            <Picker.Item label="IgG" value="IgG" />
+            <Picker.Item label="IgG1" value="IgG1" />
+            <Picker.Item label="IgG2" value="IgG2" />
+          </Picker>
+          <Picker selectedValue={ageGroup} onValueChange={(itemValue) => setAgeGroup(itemValue)} style={styles.input}>
+            <Picker.Item label="Select Age Group" value="" />
+            <Picker.Item label="0-1 ay" value="0-1 ay" />
+            <Picker.Item label="1-3 ay" value="1-3 ay" />
+            <Picker.Item label="4-6 ay" value="4-6 ay" />
+            <Picker.Item label="2-3 yıl" value="2-3 yıl" />
+            <Picker.Item label="4-6 yıl" value="4-6 yıl" />
+          </Picker>
+          <TextInput
+            label="Value"
+            mode="outlined"
+            value={value}
+            onChangeText={setValue}
+            style={styles.input}
+            placeholder="Enter value"
+            keyboardType="numeric"
+          />
+          <Button mode="contained" onPress={addTest} style={styles.button}>
+            Add Test
+          </Button>
+        </Card.Content>
+      </Card>
       <FlatList
         data={tests}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
-          const category = categorizeTestValue(
-            item.testType,
-            item.value,
-          );
-          const backgroundColor = getBackgroundColor(category);
-
+          const { category, color, icon } = categorizeTestValue(item.testType, item.value, item.ageGroup);
           return (
-            <Card style={[styles.testCard, { backgroundColor }]}>
+            <Card style={[styles.testCard, { backgroundColor: color }]}>
               <Card.Content>
                 <Text style={styles.testText}>{item.testType}</Text>
                 <Divider />
                 <Text style={styles.testValue}>Value: {item.value}</Text>
-                <Text style={styles.categoryText}>Category: {category}</Text>
+                <Text style={styles.testValue}>Age Group: {item.ageGroup}</Text>
+                <View style={styles.resultContainer}>
+                  {/* <MaterialIcons name={icon} size={24} color="#000" /> */}
+                  <Text style={styles.categoryText}>Category: {category}</Text>
+                </View>
               </Card.Content>
             </Card>
           );

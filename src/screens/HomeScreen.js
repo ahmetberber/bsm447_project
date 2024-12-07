@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Button, Card, Title } from 'react-native-paper';
+import { View, StyleSheet, Alert } from 'react-native';
+import { Button, Card, Title, Text } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 
 const HomeScreen = ({ navigation }) => {
   const [userRole, setUserRole] = useState(null);
+  const [userEmail, setUserEmail] = useState('');
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
@@ -14,6 +15,7 @@ const HomeScreen = ({ navigation }) => {
         const userDoc = await firestore().collection('users').doc(currentUser.uid).get();
         const userData = userDoc.data();
         setUserRole(userData ? userData.role : null);
+        setUserEmail(currentUser.email);
       }
       if (initializing) {
         setInitializing(false);
@@ -23,26 +25,57 @@ const HomeScreen = ({ navigation }) => {
   }, [initializing]);
 
   const logout = async () => {
-    await auth().signOut();
-    navigation.replace('Auth');
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes',
+          onPress: async () => {
+            await auth().signOut();
+            navigation.replace('Auth');
+          },
+        },
+      ]
+    );
   };
+
+  if (initializing) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <Card style={styles.card}>
         <Card.Content>
+          <Title style={styles.title}>Welcome</Title>
+          <Text style={styles.subtitle}>{userEmail}</Text>
           {userRole === 'admin' ? (
             <>
-              <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('Users')}>
-                Users
+              <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('AdminPanel')}>
+                Admin Panel
+              </Button>
+              <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('RoleManagement')}>
+                Manage Roles
               </Button>
             </>
-          ) : null }
+          ) : null}
           <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('Profile')}>
-            Profile
+            View Profile
           </Button>
           <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('Tests')}>
-            Tests
+            Test Results
+          </Button>
+          <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('TestGraph')}>
+            Test Graph
+          </Button>
+          <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('UserHistory')}>
+            Test History
           </Button>
           <Button mode="outlined" style={styles.logoutButton} onPress={logout}>
             Logout
@@ -72,6 +105,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
+    marginBottom: 16,
+  },
+  subtitle: {
+    fontSize: 16,
+    textAlign: 'center',
     marginBottom: 24,
   },
   button: {
@@ -82,6 +120,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderRadius: 8,
     borderColor: '#ff0000',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

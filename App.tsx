@@ -6,7 +6,10 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import TestScreen from './src/screens/TestScreen';
 import auth from '@react-native-firebase/auth';
-import UsersScreen from './src/screens/Users';
+import AdminPanel from './src/screens/AdminPanel';
+import UserHistory from './src/screens/UserHistory';
+import RoleManagement from './src/screens/RoleManagement';
+import TestGraph from './src/screens/TestGraph';
 
 const Stack = createStackNavigator();
 
@@ -32,34 +35,21 @@ const App = () => {
       <Stack.Navigator>
         {userExist ? (
           <>
-            <Stack.Screen
-              name="Home"
-              component={HomeScreen}
-              options={{ title: 'Home Page' }}
-            />
-            <Stack.Screen
-              name="Users"
-              component={UsersScreen}
-              options={{ title: 'Users' }}
-            />
-            <Stack.Screen
-              name="Profile"
-              component={ProfileScreen}
-              options={{ title: 'Profile' }}
-            />
-            <Stack.Screen
-              name="Tests"
-              component={TestScreen}
-              options={{ title: 'Tests' }}
-            />
+            {/* <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Home Page' }}/>
+            <Stack.Screen name="Users" component={UsersScreen} options={{ title: 'Users' }}/>
+            <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }}/>
+            <Stack.Screen name="Tests" component={TestScreen} options={{ title: 'Tests' }}/> */}
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="AdminPanel" component={AdminPanel} />
+            <Stack.Screen name="Tests" component={TestScreen}/>
+            <Stack.Screen name="TestGraph" component={TestGraph}/>
+            <Stack.Screen name="UserHistory" component={UserHistory} />
+            <Stack.Screen name="RoleManagement" component={RoleManagement} />
           </>
         ) : (
           <>
-            <Stack.Screen
-              name="Auth"
-              component={AuthScreen}
-              options={{ headerShown: false }}
-            />
+            <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: false }}/>
           </>
         )
       }

@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { TextInput, Button, Card, Title, Text, ActivityIndicator } from 'react-native-paper';
+import { TextInput, Button, Card, Text, ActivityIndicator } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
 
 const ProfileScreen = () => {
@@ -23,7 +24,7 @@ const ProfileScreen = () => {
       await user.updateProfile({ displayName });
       setMessage('Profile updated successfully!');
     } catch (error) {
-      setMessage(error.message);
+      setMessage(`Error: ${error.message}`);
     }
   };
 
@@ -79,10 +80,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignSelf: 'center',
     marginBottom: 16,
   },
   label: {
