@@ -4,7 +4,7 @@ import { TextInput, Button, Card, Title, Text, Divider } from 'react-native-pape
 import { Picker } from '@react-native-picker/picker';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
-// import MaterialIcons from '@react-native-vector-icons/material-icons';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const referenceRanges = {
   IgA: {
@@ -87,6 +87,7 @@ const TestScreen = () => {
   const [value, setValue] = useState('');
   const [ageGroup, setAgeGroup] = useState('');
   const [tests, setTests] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchTests();
@@ -120,6 +121,19 @@ const TestScreen = () => {
     setValue('');
     setAgeGroup('');
     fetchTests();
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query.trim() === '') {
+      setTests(tests);
+    } else {
+      const filtered = tests.filter((test) =>
+        test.testType.toLowerCase().includes(query.toLowerCase()) ||
+        test.value.toString().includes(query.toLowerCase())
+      );
+      setTests(filtered);
+    }
   };
 
   return (
@@ -157,6 +171,9 @@ const TestScreen = () => {
           </Button>
         </Card.Content>
       </Card>
+      <TextInput style={styles.searchInput} placeholder="Search test results..." value={searchQuery}
+        onChangeText={handleSearch}
+      />
       <FlatList
         data={tests}
         keyExtractor={(item) => item.id}
@@ -165,14 +182,14 @@ const TestScreen = () => {
           return (
             <Card style={[styles.testCard, { backgroundColor: color }]}>
               <Card.Content>
-                <Text style={styles.testText}>{item.testType}</Text>
+                <View style={styles.resultContainer}>
+                  <Text style={styles.testText}>{item.testType}</Text>
+                  <Icon name={icon} size={30} color="#000" />
+                </View>
                 <Divider />
                 <Text style={styles.testValue}>Value: {item.value}</Text>
                 <Text style={styles.testValue}>Age Group: {item.ageGroup}</Text>
-                <View style={styles.resultContainer}>
-                  {/* <MaterialIcons name={icon} size={24} color="#000" /> */}
                   <Text style={styles.categoryText}>Category: {category}</Text>
-                </View>
               </Card.Content>
             </Card>
           );
@@ -188,6 +205,14 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: '#f5f5f5',
+  },
+  searchInput: {
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    backgroundColor: '#fff',
   },
   card: {
     marginBottom: 16,
@@ -228,6 +253,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginTop: 8,
+  },
+  resultContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });
 
