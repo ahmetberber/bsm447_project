@@ -57,25 +57,19 @@ const HomeScreen = ({ navigation }) => {
           <Text style={styles.subtitle}>{userEmail}</Text>
           {userRole === 'admin' ? (
             <>
-              <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('AdminPanel')}>
-                Admin Panel
-              </Button>
-              <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('RoleManagement')}>
-                Manage Roles
+              <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('Patients')}>
+                Patients
               </Button>
             </>
-          ) : null}
+          ) : (
+            <>
+              <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('Patients')}>
+                asdasd
+              </Button>
+            </>
+          )}
           <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('Profile')}>
             View Profile
-          </Button>
-          <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('Tests')}>
-            Test Results
-          </Button>
-          <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('TestGraph')}>
-            Test Graph
-          </Button>
-          <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('UserHistory')}>
-            Test History
           </Button>
           <Button mode="outlined" style={styles.logoutButton} onPress={logout}>
             Logout
