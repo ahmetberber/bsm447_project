@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, Alert } from 'react-native';
 import { Button, Card, Title, Text, Divider, ActivityIndicator } from 'react-native-paper';
 import firestore from '@react-native-firebase/firestore';
-import { Header } from '@react-navigation/stack';
 
 const Patients = ({ navigation }) => {
   const [patients, setPatients] = useState([]);

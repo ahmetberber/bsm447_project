@@ -1,28 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { Button, Card, Title, Text } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import { useUser } from '../UserProvider';
 
 const HomeScreen = ({ navigation }) => {
-  const [userRole, setUserRole] = useState(null);
-  const [userEmail, setUserEmail] = useState('');
-  const [initializing, setInitializing] = useState(true);
-
-  useEffect(() => {
-    const subscriber = auth().onAuthStateChanged(async currentUser => {
-      if (currentUser) {
-        const userDoc = await firestore().collection('users').doc(currentUser.uid).get();
-        const userData = userDoc.data();
-        setUserRole(userData ? userData.role : null);
-        setUserEmail(currentUser.email);
-      }
-      if (initializing) {
-        setInitializing(false);
-      }
-    });
-    return subscriber;
-  }, [initializing]);
+  const { userRole, userEmail, patientId } = useUser();
 
   const logout = async () => {
     Alert.alert(
@@ -30,8 +13,7 @@ const HomeScreen = ({ navigation }) => {
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Yes',
+        { text: 'Yes',
           onPress: async () => {
             await auth().signOut();
             navigation.replace('Auth');
@@ -40,14 +22,6 @@ const HomeScreen = ({ navigation }) => {
       ]
     );
   };
-
-  if (initializing) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -63,8 +37,8 @@ const HomeScreen = ({ navigation }) => {
             </>
           ) : (
             <>
-              <Button mode="contained" style={styles.button} onPress={() => navigation.navigate('Patients')}>
-                asdasd
+              <Button mode="contained" onPress={() => navigation.navigate('PatientTests', { patientId: patientId })} style={styles.button}>
+                View Tests
               </Button>
             </>
           )}

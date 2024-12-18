@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, Alert } from 'react-native';
 import { TextInput, Button, Card, Text } from 'react-native-paper';
 import firestore from '@react-native-firebase/firestore';
+import { useUser } from '../UserProvider';
 
 const TestDetails = ({ route }) => {
     const { type, patientId } = route.params;
     const [value, setValue] = useState('');
     const [tests, setTests] = useState([]);
+    const { userRole } = useUser();
 
     const addTest = async () => {
         if (!value) {
@@ -44,18 +46,22 @@ const TestDetails = ({ route }) => {
     return (
         <View style={styles.container}>
             <Text style={styles.title}>{type} Tests</Text>
-            <TextInput
-                label="Value"
-                value={value}
-                onChangeText={setValue}
-                style={styles.input}
-                keyboardType="numeric"
-                mode="outlined"
-                theme={{ colors: { primary: '#6200ee', underlineColor: 'transparent' } }}
-            />
-            <Button mode="contained" onPress={addTest} style={styles.button} color="#6200ee">
-                Add Test
-            </Button>
+            {userRole === 'admin' ? (
+                <>
+                    <TextInput
+                        label="Value"
+                        value={value}
+                        onChangeText={setValue}
+                        style={styles.input}
+                        keyboardType="numeric"
+                        mode="outlined"
+                        theme={{ colors: { primary: '#6200ee', underlineColor: 'transparent' } }}
+                    />
+                    <Button mode="contained" onPress={addTest} style={styles.button} color="#6200ee">
+                        Add Test
+                    </Button>
+                </>
+            ) : null }
             {tests.length > 0 ? (
                 <FlatList style={{ marginTop: 16 }}
                     data={tests}

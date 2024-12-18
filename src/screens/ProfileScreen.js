@@ -6,7 +6,7 @@ import auth from '@react-native-firebase/auth';
 
 const ProfileScreen = () => {
   const [user, setUser] = useState(null);
-  const [displayName, setDisplayName] = useState('');
+  const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -14,15 +14,14 @@ const ProfileScreen = () => {
     const currentUser = auth().currentUser;
     if (currentUser) {
       setUser(currentUser);
-      setDisplayName(currentUser.displayName || '');
     }
     setLoading(false);
   }, []);
 
-  const updateProfile = async () => {
+  const updatePassword = async () => {
     try {
-      await user.updateProfile({ displayName });
-      setMessage('Profile updated successfully!');
+      await user.updatePassword(password);
+      setMessage('Password updated successfully!');
     } catch (error) {
       setMessage(`Error: ${error.message}`);
     }
@@ -31,7 +30,7 @@ const ProfileScreen = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" style={styles.loading} />
         <Text>Loading...</Text>
       </View>
     );
@@ -44,20 +43,21 @@ const ProfileScreen = () => {
           <Card.Content>
             <Text style={styles.label}>Email:</Text>
             <Text style={styles.info}>{user.email}</Text>
-            <Text style={styles.label}>Name:</Text>
+            <Text style={styles.label}>Password:</Text>
             <TextInput
               mode="outlined"
-              value={displayName}
-              onChangeText={setDisplayName}
+              value={user.password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
               style={styles.input}
-              placeholder="Enter your name"
             />
             <Button
               mode="contained"
-              onPress={updateProfile}
+              onPress={updatePassword}
               style={styles.button}
             >
-              Update Profile
+              Update Password
             </Button>
             {message ? <Text style={styles.message}>{message}</Text> : null}
           </Card.Content>
@@ -106,12 +106,15 @@ const styles = StyleSheet.create({
   message: {
     marginTop: 16,
     textAlign: 'center',
-    color: 'green',
+    color: 'red',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loading: {
+    marginBottom: 16,
   },
 });
 

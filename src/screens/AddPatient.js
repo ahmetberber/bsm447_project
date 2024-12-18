@@ -12,9 +12,11 @@ const AddPatient = ({ navigation }) => {
     const [cinsiyet, setCinsiyet] = useState('');
     const [dogumYeri, setDogumYeri] = useState('');
     const [hastaNumarasi, setHastaNumarasi] = useState('');
+    const [eposta, setEposta] = useState('');
+    const [parola, setParola] = useState('');
 
     const handleAddPatient = () => {
-        if (!adSoyad || !dogumTarihi || !cinsiyet || !dogumYeri || !hastaNumarasi) {
+        if (!adSoyad || !dogumTarihi || !cinsiyet || !dogumYeri || !hastaNumarasi || !eposta || !parola) {
             Alert.alert('Validation Error', 'Please fill out all fields.');
             return;
         }
@@ -25,6 +27,16 @@ const AddPatient = ({ navigation }) => {
             cinsiyet,
             dogumYeri,
             hastaNumarasi,
+        }).then((docRef) => {
+            firestore().collection('users').add({
+                eposta,
+                parola,
+                role: 'user',
+                patientId: docRef.id,
+            });
+        }).catch((error) => {
+            Alert.alert('Error', 'Something went wrong. Please try again.');
+            console.error('Error adding document: ', error);
         });
 
         setAdSoyad('');
@@ -32,13 +44,13 @@ const AddPatient = ({ navigation }) => {
         setCinsiyet('');
         setDogumYeri('');
         setHastaNumarasi('');
+        setEposta('');
+        setParola('');
 
-        Alert.alert('Success', 'Patient added successfully!', [
-            {
-                text: 'OK',
-                onPress: () => navigation.navigate('Patients'),
-            },
-        ]);
+        Alert.alert('Success', 'Patient added successfully!', [{
+            text: 'OK',
+            onPress: () => navigation.navigate('Patients'),
+        }]);
     };
 
     const showDatePickerModal = () => {
@@ -69,6 +81,24 @@ const AddPatient = ({ navigation }) => {
                         onChangeText={setAdSoyad}
                         style={styles.input}
                         mode="outlined"
+                    />
+                    <TextInput
+                        label="E-Posta"
+                        value={eposta}
+                        keyboardType="email-address"
+                        onChangeText={setEposta}
+                        style={styles.input}
+                        mode="outlined"
+                        autoCapitalize="none"
+                    />
+                    <TextInput
+                        label="Parola"
+                        value={parola}
+                        onChangeText={setParola}
+                        style={styles.input}
+                        mode="outlined"
+                        secureTextEntry
+                        autoCapitalize="none"
                     />
                     <TextInput
                         label="Doğum Tarihi"

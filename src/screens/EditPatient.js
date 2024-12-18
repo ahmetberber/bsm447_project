@@ -8,6 +8,7 @@ import { Picker } from '@react-native-picker/picker';
 const EditPatient = ({ route, navigation }) => {
     const { patientId } = route.params;
     const [adSoyad, setAdSoyad] = useState('');
+    const [eposta, setEposta] = useState('');
     const [dogumTarihi, setDogumTarihi] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [cinsiyet, setCinsiyet] = useState('');
@@ -17,8 +18,11 @@ const EditPatient = ({ route, navigation }) => {
     useEffect(() => {
         const fetchPatientData = async () => {
             const patientDoc = await firestore().collection('patients').doc(patientId).get();
+            const userDoc = await firestore().collection('users').where('patientId', '==', patientId).get();
             const patientData = patientDoc.data();
+            const userData = userDoc.docs[0].data();
             setAdSoyad(patientData.adSoyad);
+            setEposta(userData.email);
             setDogumTarihi(new Date(patientData.dogumTarihi));
             setCinsiyet(patientData.cinsiyet);
             setDogumYeri(patientData.dogumYeri);
@@ -76,6 +80,13 @@ const EditPatient = ({ route, navigation }) => {
                         label="Ad Soyad"
                         value={adSoyad}
                         onChangeText={setAdSoyad}
+                        style={styles.input}
+                        mode="outlined"
+                    />
+                    <TextInput
+                        label="E-Posta"
+                        value={eposta}
+                        disabled
                         style={styles.input}
                         mode="outlined"
                     />

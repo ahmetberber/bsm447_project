@@ -11,11 +11,14 @@ import AddPatient from './src/screens/AddPatient';
 import PatientTestGraph from './src/screens/PatientTestGraph';
 import EditPatient from './src/screens/EditPatient';
 import TestDetails from './src/screens/TestDetails';
+import { UserProvider } from './src/UserProvider';
+import { ActivityIndicator } from 'react-native-paper';
+import { StyleSheet, Text, View } from 'react-native';
 
 const Stack = createStackNavigator();
 
 const App = () => {
-  const [initializing, setInitializing] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [userExist, setUserExist] = useState(false);
 
   useEffect(() => {
@@ -24,18 +27,27 @@ const App = () => {
         setUserExist(true);
       }
 
-      if (initializing) {
-        setInitializing(false);
+      if (loading) {
+        setLoading(false);
       }
     });
     return subscriber;
-  }, [initializing]);
+  }, [loading]);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" style={styles.loading} />
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
-      <Stack.Navigator>
-        {userExist ? (
-          <>
+      <UserProvider>
+        <Stack.Navigator initialRouteName={userExist ? 'Home' : 'Auth'}>
+            <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: false }}/>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Patients" component={Patients} />
@@ -44,16 +56,21 @@ const App = () => {
             <Stack.Screen name="PatientTests" component={PatientTests}/>
             <Stack.Screen name="TestDetails" component={TestDetails}/>
             <Stack.Screen name="PatientTestGraph" component={PatientTestGraph}/>
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: false }}/>
-          </>
-        )
-      }
-      </Stack.Navigator>
+        </Stack.Navigator>
+      </UserProvider>
     </NavigationContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loading: {
+    marginBottom: 16,
+  },
+});
 
 export default App;
