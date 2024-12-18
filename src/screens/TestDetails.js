@@ -5,10 +5,11 @@ import firestore from '@react-native-firebase/firestore';
 import { useUser } from '../UserProvider';
 
 const TestDetails = ({ route }) => {
-    const { type, patientId } = route.params;
+    const { type, patientId, dob } = route.params;
     const [value, setValue] = useState('');
     const [tests, setTests] = useState([]);
     const { userRole } = useUser();
+    const g = ['ap', 'cilv', 'tjp'];
 
     const addTest = async () => {
         if (!value) {
@@ -30,6 +31,21 @@ const TestDetails = ({ route }) => {
     };
 
     useEffect(() => {
+        const calculateAgeInMonths = () => {
+            const birthDate = new Date(dob);
+            const today = new Date();
+            return ((today.getFullYear() - birthDate.getFullYear()) * 12 + today.getMonth() - birthDate.getMonth());
+        };
+
+        const determineStatus = (val, referenceRanges) => {
+            var age = calculateAgeInMonths();
+            const range = referenceRanges.find((r) => r.max_age_months !== null ? age >= r.min_age_months && age <= r.max_age_month : age >= r.min_age_months);
+            if (!range) { return 'No Reference'; }
+            if (val < range.min_val) { return 'Low'; }
+            if (val > range.max_val) { return 'High'; }
+            return 'Normal';
+        };
+
         const fetchTests = async () => {
             const snapshot = await firestore()
                 .collection('tests')
@@ -37,11 +53,28 @@ const TestDetails = ({ route }) => {
                 .where('patientId', '==', patientId)
                 .orderBy('createdAt', 'desc')
                 .get();
-            setTests(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+
+            var currentTests = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+            const guides = ['ap', 'cilv', 'tjp'];
+            const immunoglobulins = ['IgA', 'IgM', 'IgG', 'IgG1', 'IgG2', 'IgG3', 'IgG4'];
+
+            for (const guide of guides) {
+                const ss = await firestore().collection('guides').doc(guide).get();
+                for (const immunoglobulin of immunoglobulins.filter((ig) => ig === type)) {
+                    const refs = ss.data()[immunoglobulin];
+                    currentTests = currentTests.map((test) => {
+                        test[guide] = test[guide] || {};
+                        test[guide].status = determineStatus(test.value, refs);
+                        return test;
+                    });
+                }
+            }
+
+            setTests(currentTests);
         };
 
         fetchTests();
-    }, [type, patientId]);
+    }, [type, patientId, dob]);
 
     return (
         <View style={styles.container}>
@@ -55,28 +88,36 @@ const TestDetails = ({ route }) => {
                         style={styles.input}
                         keyboardType="numeric"
                         mode="outlined"
-                        theme={{ colors: { primary: '#6200ee', underlineColor: 'transparent' } }}
                     />
-                    <Button mode="contained" onPress={addTest} style={styles.button} color="#6200ee">
+                    <Button mode="contained" onPress={addTest} style={styles.button}>
                         Add Test
                     </Button>
                 </>
-            ) : null }
+            ) : null}
             {tests.length > 0 ? (
-                <FlatList style={{ marginTop: 16 }}
+                <FlatList
                     data={tests}
                     keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <Card style={styles.card}>
-                            <Card.Content>
-                                <Text style={styles.testValue}>Value: {item.value}</Text>
-                                <Text style={styles.testValue}>Created At: {item.createdAt ? item.createdAt.toDate().toLocaleString() : 'N/A'}</Text>
-                            </Card.Content>
-                        </Card>
-                    )}
+                    renderItem={({ item }) => {
+                        return (
+                            <Card style={styles.card}>
+                                <Card.Content>
+                                    <Text style={styles.testValue}>Value: {item.value}</Text>
+                                    {g.map((guide) => (
+                                        <Text key={guide} style={styles.testValue}>
+                                            {guide}: {item[guide]?.status}
+                                        </Text>
+                                    ))}
+                                    <Text style={styles.testValue}>Created At: {item.createdAt?.toDate().toLocaleString()}</Text>
+                                </Card.Content>
+                            </Card>
+                        );
+                    }}
                 />
             ) : (
-                <Text style={{ textAlign: 'center', marginTop: 45, fontSize: 22 }}>No tests available.</Text>
+                <Text style={{ textAlign: 'center', marginTop: 45, fontSize: 22 }}>
+                    No tests available.
+                </Text>
             )}
         </View>
     );
@@ -92,8 +133,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#9f9dff',
         marginBottom: 16,
         borderRadius: 8,
-        elevation: 4,
         padding: 16,
+        elevation: 4,
     },
     title: {
         fontSize: 20,
@@ -106,6 +147,7 @@ const styles = StyleSheet.create({
     },
     button: {
         borderRadius: 8,
+        margin: 16,
     },
     testValue: {
         fontSize: 16,
