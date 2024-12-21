@@ -1,26 +1,15 @@
 import React from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Button, Card, Title, Text } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
 import { useUser } from '../UserProvider';
 
 const HomeScreen = ({ navigation }) => {
-  const { userRole, userEmail, patientId } = useUser();
+  const { userRole, userEmail, patientId, dob } = useUser();
 
   const logout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Yes',
-          onPress: async () => {
-            await auth().signOut();
-            navigation.replace('Auth');
-          },
-        },
-      ]
-    );
+    await auth().signOut();
+    navigation.replace('Auth');
   };
 
   return (
@@ -37,7 +26,7 @@ const HomeScreen = ({ navigation }) => {
             </>
           ) : (
             <>
-              <Button mode="contained" onPress={() => navigation.navigate('PatientTests', { patientId: patientId })} style={styles.button}>
+              <Button mode="contained" onPress={() => navigation.navigate('TestDetails', { patientId: patientId, dob: dob })} style={styles.button}>
                 View Tests
               </Button>
             </>

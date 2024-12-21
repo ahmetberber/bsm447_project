@@ -4,10 +4,12 @@ import firestore from '@react-native-firebase/firestore';
 
 const UserContext = createContext({
     userId: null,
+    dob: null,
     userRole: null,
     userEmail: null,
     patientId: null,
-    seyUserId: (id) => {},
+    setUserId: (id) => {},
+    setDob: (dob) => {},
     setUserRole: (role) => {},
     setUserEmail: (email) => {},
     setPatientId: (id) => {},
@@ -15,6 +17,7 @@ const UserContext = createContext({
 
 export const UserProvider = ({ children }) => {
   const [userId, setUserId] = useState(null);
+  const [dob, setDob] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
   const [patientId, setPatientId] = useState(null);
@@ -23,12 +26,22 @@ export const UserProvider = ({ children }) => {
     const fetchUserData = async () => {
       const currentUser = auth().currentUser;
       if (currentUser) {
+        setUserId(currentUser.uid);
+        setUserEmail(currentUser.email);
+
         const userDoc = await firestore().collection('users').doc(currentUser.uid).get();
         const userData = userDoc.data();
-        setUserId(currentUser.uid);
-        setUserRole(userData ? userData.role : null);
-        setUserEmail(currentUser.email);
-        setPatientId(userData ? userData.patientId : '');
+        if(userData) {
+          setUserRole(userData.role);
+          setPatientId(userData.patientId);
+
+          const patientDoc = await firestore().collection('patients').doc(userData.patientId).get();
+          const patientData = patientDoc.data();
+          if(patientData) {
+            setDob(patientData.dogumTarihi);
+          }
+
+        }
       }
     };
 
@@ -36,7 +49,7 @@ export const UserProvider = ({ children }) => {
   }, []);
 
   return (
-    <UserContext.Provider value={{ userId, userRole, userEmail, patientId, setUserId, setUserRole, setUserEmail, setPatientId }}>
+    <UserContext.Provider value={{ userId, dob, userRole, userEmail, patientId, setUserId, setDob, setUserRole, setUserEmail, setPatientId }}>
       {children}
     </UserContext.Provider>
   );

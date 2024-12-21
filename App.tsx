@@ -4,11 +4,9 @@ import { createStackNavigator } from '@react-navigation/stack';
 import AuthScreen from './src/screens/AuthScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import HomeScreen from './src/screens/HomeScreen';
-import PatientTests from './src/screens/PatientTests';
 import auth from '@react-native-firebase/auth';
 import Patients from './src/screens/Patients';
 import AddPatient from './src/screens/AddPatient';
-import PatientTestGraph from './src/screens/PatientTestGraph';
 import EditPatient from './src/screens/EditPatient';
 import TestDetails from './src/screens/TestDetails';
 import { UserProvider } from './src/UserProvider';
@@ -53,9 +51,7 @@ const App = () => {
             <Stack.Screen name="Patients" component={Patients} />
             <Stack.Screen name="AddPatient" component={AddPatient} />
             <Stack.Screen name="EditPatient" component={EditPatient} />
-            <Stack.Screen name="PatientTests" component={PatientTests}/>
             <Stack.Screen name="TestDetails" component={TestDetails}/>
-            <Stack.Screen name="PatientTestGraph" component={PatientTestGraph}/>
         </Stack.Navigator>
       </UserProvider>
     </NavigationContainer>

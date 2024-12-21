@@ -69,12 +69,9 @@ const Patients = ({ navigation }) => {
               <Text style={styles.patientInfo}>Doğum Yeri: {item.dogumYeri}</Text>
               <Text style={styles.patientInfo}>Hasta Numarası: {item.hastaNumarasi}</Text>
               <Divider style={styles.divider} />
-              <Button mode="contained" onPress={() => navigation.navigate('PatientTests', { patientId: item.id, dob: item.dogumTarihi })} style={styles.button}>
+              <Button mode="contained" onPress={() => navigation.navigate('TestDetails', { patientId: item.id, dob: item.dogumTarihi })} style={styles.button}>
                 View Tests
               </Button>
-              {/* <Button mode="contained" onPress={() => navigation.navigate('PatientTestGraph', { patientId: item.id })} style={styles.button}>
-                View Test Graph
-              </Button> */}
               <Button mode="contained" onPress={() => navigation.navigate('EditPatient', { patientId: item.id })} style={styles.button}>
                 Edit Patient
               </Button>
