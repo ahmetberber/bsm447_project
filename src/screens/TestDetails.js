@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, StyleSheet, FlatList, Alert, Modal, TouchableOpacity } from 'react-native';
 import { TextInput, Button, Card, Text, ActivityIndicator } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
@@ -13,13 +13,14 @@ const TestDetails = ({ route }) => {
     const [value, setValue] = useState('');
     const [tests, setTests] = useState([]);
     const { userRole } = useUser();
-    const g = ['ap', 'cilv', 'tjp'];
     const [loading, setLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 2)));
     const [endDate, setEndDate] = useState(new Date(new Date().setDate(new Date().getDate() + 1)));
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+    const guides = useMemo(() => ['ap', 'cilv', 'tjp'], []);
+    const immunoglobulins = useMemo(() => ['IgA', 'IgM', 'IgG', 'IgG1', 'IgG2', 'IgG3', 'IgG4'], []);
 
     const addTest = async () => {
         if (!value) {
@@ -27,72 +28,75 @@ const TestDetails = ({ route }) => {
             return;
         }
 
-        const newTest = {
-            patientId,
-            testType: type,
-            value: parseFloat(value),
-            createdAt: firestore.Timestamp.now(),
-        };
-
-        Alert.alert('Success', 'Test added successfully!');
-        await firestore().collection('tests').add(newTest);
-        setModalVisible(false);
+        setLoading(true);
+        try {
+            await firestore().collection('tests').add({
+                patientId,
+                testType: type,
+                value: parseFloat(value),
+                createdAt: firestore.Timestamp.now(),
+            });
+            Alert.alert('Success', 'Test added successfully!');
+            fetchTests();
+            setModalVisible(false);
+        } catch (error) {
+            Alert.alert('Error', 'Failed to add test.');
+        }
+        setLoading(false);
     };
 
-    useEffect(() => {
+    const determineStatus = useCallback((val, referenceRanges) => {
         const calculateAgeInMonths = () => {
             const birthDate = new Date(dob);
             const today = new Date();
             return ((today.getFullYear() - birthDate.getFullYear()) * 12 + today.getMonth() - birthDate.getMonth());
         };
 
-        const determineStatus = (val, referenceRanges) => {
-            var age = calculateAgeInMonths();
-            const range = referenceRanges.find((r) => r.max_age_months !== null ? age >= r.min_age_months && age <= r.max_age_month : age >= r.min_age_months);
-            if (!range) { return 'No Reference'; }
-            if (val < range.min_val) { return 'Low'; }
-            if (val > range.max_val) { return 'High'; }
-            return 'Normal';
-        };
+        var age = calculateAgeInMonths();
+        const range = referenceRanges.find((r) => age >= r.min_age_months && age <= r.max_age_months);
+        if (!range) { return 'No Reference'; }
+        if (val < range.min_val) { return 'Low'; }
+        if (val > range.max_val) { return 'High'; }
+        return 'Normal';
+    }, [dob]);
 
-        const fetchTests = async () => {
-            setLoading(true);
-            let query = firestore()
-                .collection('tests')
-                .where('patientId', '==', patientId)
-                .orderBy('createdAt', 'desc');
+    const fetchTests = useCallback(async () => {
+        setLoading(true);
+        let query = firestore()
+            .collection('tests')
+            .where('patientId', '==', patientId)
+            .orderBy('createdAt', 'desc');
 
-            if (filterType) {
-                query = query.where('testType', '==', filterType);
-            }
+        if (filterType) {
+            query = query.where('testType', '==', filterType);
+        }
 
-            if (startDate && endDate) {
-                query = query.where('createdAt', '>=', firestore.Timestamp.fromDate(startDate))
-                             .where('createdAt', '<=', firestore.Timestamp.fromDate(endDate));
-            }
+        if (startDate && endDate) {
+            query = query.where('createdAt', '>=', firestore.Timestamp.fromDate(startDate))
+                         .where('createdAt', '<=', firestore.Timestamp.fromDate(endDate));
+        }
 
-            const snapshot = await query.get();
-            var currentTests = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-            const guides = ['ap', 'cilv', 'tjp'];
-            const immunoglobulins = ['IgA', 'IgM', 'IgG', 'IgG1', 'IgG2', 'IgG3', 'IgG4'];
+        const snapshot = await query.get();
+        var currentTests = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-            for (const guide of guides) {
-                const ss = await firestore().collection('guides').doc(guide).get();
-                currentTests = currentTests.map((test) => {
-                    if(immunoglobulins.includes(test.testType) && ss.data()[test.testType]) {
-                        test[guide] = test[guide] || {};
-                        test[guide].status = determineStatus(test.value, ss.data()[test.testType]);
-                    }
-                    return test;
-                });
-            }
+        for (const guide of guides) {
+            const ss = await firestore().collection('guides').doc(guide).get();
+            currentTests = currentTests.map((test) => {
+                if(immunoglobulins.includes(test.testType) && ss.data()[test.testType]) {
+                    test[guide] = test[guide] || {};
+                    test[guide].status = determineStatus(test.value, ss.data()[test.testType]);
+                }
+                return test;
+            });
+        }
 
-            setLoading(false);
-            setTests(currentTests);
-        };
+        setLoading(false);
+        setTests(currentTests);
+    }, [patientId, filterType, startDate, endDate, guides, immunoglobulins, determineStatus]);
 
+    useEffect(() => {
         fetchTests();
-    }, [filterType, startDate, endDate, patientId, dob]);
+    }, [filterType, startDate, endDate, fetchTests]);
 
     if (loading) {
         return (
@@ -219,7 +223,7 @@ const TestDetails = ({ route }) => {
                                 <Card.Content>
                                     <Text style={styles.testValue}>Type: {item.testType}</Text>
                                     <Text style={styles.testValue}>Value: {item.value}</Text>
-                                    {g.map((guide) => (
+                                    {guides.map((guide) => (
                                         <Text key={guide} style={styles.testValue}>
                                             {guide}: {item[guide]?.status}
                                         </Text>
